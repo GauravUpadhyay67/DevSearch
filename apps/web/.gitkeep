@@ -1,2 +1,0 @@
-# Next.js frontend will be scaffolded here.
-# Run: npx -y create-next-app@latest web --typescript --app --eslint --src-dir --no-tailwind --import-alias "@/*"

@@ -1,0 +1,235 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ============ USERS ============
+model User {
+  id            String     @id @default(uuid())
+  email         String     @unique
+  username      String     @unique
+  passwordHash  String     @map("password_hash")
+  displayName   String?    @map("display_name")
+  avatarUrl     String?    @map("avatar_url")
+  role          Role       @default(USER)
+  isActive      Boolean    @default(true) @map("is_active")
+  lastLoginAt   DateTime?  @map("last_login_at")
+  createdAt     DateTime   @default(now()) @map("created_at")
+  updatedAt     DateTime   @updatedAt @map("updated_at")
+
+  notes         Note[]
+  snippets      Snippet[]
+  bookmarks     Bookmark[]
+  folders       Folder[]
+  tags          Tag[]
+  favorites     Favorite[]
+  searchHistory SearchHistory[]
+  refreshTokens RefreshToken[]
+
+  @@map("users")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String   @map("user_id")
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("refresh_tokens")
+}
+
+// ============ NOTES ============
+model Note {
+  id          String   @id @default(uuid())
+  title       String
+  content     String   @db.Text      // Markdown content
+  excerpt     String?                 // Auto-generated plain-text preview
+  isPublic    Boolean  @default(false) @map("is_public")
+  userId      String   @map("user_id")
+  folderId    String?  @map("folder_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  folder      Folder?     @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  tags        TagsOnItems[]
+  attachments Attachment[]
+  favorites   Favorite[]
+
+  @@index([userId])
+  @@index([folderId])
+  @@map("notes")
+}
+
+// ============ SNIPPETS ============
+model Snippet {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  code        String   @db.Text
+  language    String                  // "javascript", "python", etc.
+  isPublic    Boolean  @default(false) @map("is_public")
+  userId      String   @map("user_id")
+  folderId    String?  @map("folder_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  folder      Folder?     @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  tags        TagsOnItems[]
+  favorites   Favorite[]
+
+  @@index([userId])
+  @@index([language])
+  @@map("snippets")
+}
+
+// ============ BOOKMARKS ============
+model Bookmark {
+  id          String       @id @default(uuid())
+  title       String
+  url         String
+  description String?
+  type        BookmarkType @default(ARTICLE)
+  siteName    String?      @map("site_name")     // "GitHub", "StackOverflow"
+  faviconUrl  String?      @map("favicon_url")
+  userId      String       @map("user_id")
+  folderId    String?      @map("folder_id")
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  folder      Folder?     @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  tags        TagsOnItems[]
+  favorites   Favorite[]
+
+  @@index([userId])
+  @@index([type])
+  @@map("bookmarks")
+}
+
+enum BookmarkType {
+  ARTICLE
+  DOCUMENTATION
+  GITHUB_REPO
+  VIDEO
+  STACKOVERFLOW
+  OTHER
+}
+
+// ============ ORGANIZATION ============
+model Folder {
+  id        String   @id @default(uuid())
+  name      String
+  icon      String?                  // Emoji or icon name
+  parentId  String?  @map("parent_id")
+  userId    String   @map("user_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent    Folder?   @relation("FolderTree", fields: [parentId], references: [id], onDelete: SetNull)
+  children  Folder[]  @relation("FolderTree")
+  notes     Note[]
+  snippets  Snippet[]
+  bookmarks Bookmark[]
+
+  @@unique([name, parentId, userId])
+  @@map("folders")
+}
+
+model Tag {
+  id        String   @id @default(uuid())
+  name      String
+  color     String?                  // Hex color for UI
+  userId    String   @map("user_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items     TagsOnItems[]
+
+  @@unique([name, userId])
+  @@map("tags")
+}
+
+// Polymorphic join table for tags
+model TagsOnItems {
+  id         String   @id @default(uuid())
+  tagId      String   @map("tag_id")
+  noteId     String?  @map("note_id")
+  snippetId  String?  @map("snippet_id")
+  bookmarkId String?  @map("bookmark_id")
+  assignedAt DateTime @default(now()) @map("assigned_at")
+
+  tag      Tag       @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  note     Note?     @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  snippet  Snippet?  @relation(fields: [snippetId], references: [id], onDelete: Cascade)
+  bookmark Bookmark? @relation(fields: [bookmarkId], references: [id], onDelete: Cascade)
+
+  @@map("tags_on_items")
+}
+
+// ============ FAVORITES ============
+model Favorite {
+  id         String   @id @default(uuid())
+  userId     String   @map("user_id")
+  noteId     String?  @map("note_id")
+  snippetId  String?  @map("snippet_id")
+  bookmarkId String?  @map("bookmark_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  note     Note?     @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  snippet  Snippet?  @relation(fields: [snippetId], references: [id], onDelete: Cascade)
+  bookmark Bookmark? @relation(fields: [bookmarkId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, noteId])
+  @@unique([userId, snippetId])
+  @@unique([userId, bookmarkId])
+  @@map("favorites")
+}
+
+// ============ ATTACHMENTS ============
+model Attachment {
+  id           String   @id @default(uuid())
+  filename     String
+  originalName String   @map("original_name")
+  mimeType     String   @map("mime_type")
+  size         Int                    // bytes
+  storagePath  String   @map("storage_path")
+  noteId       String   @map("note_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  note Note @relation(fields: [noteId], references: [id], onDelete: Cascade)
+
+  @@map("attachments")
+}
+
+// ============ SEARCH ============
+model SearchHistory {
+  id        String   @id @default(uuid())
+  query     String
+  filters   Json?                    // Stored filter config
+  userId    String   @map("user_id")
+  isSaved   Boolean  @default(false) @map("is_saved")  // "Saved search"
+  searchedAt DateTime @default(now()) @map("searched_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, searchedAt])
+  @@map("search_history")
+}

@@ -6,23 +6,36 @@ import { useRouter } from 'next/navigation';
 import { Input } from '../../../src/components/Input';
 import { Button } from '../../../src/components/Button';
 import { OAuthButton } from '../../../src/components/OAuthButton';
+import { fetchApi } from '../../../src/lib/api';
 import '../login/login.css';
 
 export default function RegisterPage() {
   const router = useRouter();
+  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [isSuccess, setIsSuccess] = useState(false);
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
     
-    // TODO: Connect to backend local register API
-    setTimeout(() => {
+    try {
+      const response = await fetchApi('/auth/register', {
+        data: { username, email, password }
+      });
+      
+      if (response) {
+        setIsSuccess(true);
+      }
+    } catch (err: any) {
+      setError(err.message || 'Registration failed. Username or email might be taken.');
+    } finally {
       setIsLoading(false);
-      setError('Registration is currently disabled for demo purposes.');
-    }, 1000);
+    }
   };
 
   const handleOAuth = (provider: 'google' | 'github') => {
@@ -72,60 +85,83 @@ export default function RegisterPage() {
       {/* Right Login Pane */}
       <div className="form-side">
         <div className="login-wrapper">
-          <div className="login-header">
-            <h2 className="login-title">Create Account</h2>
-            <p className="login-subtitle">Start your journey today</p>
-          </div>
+          {isSuccess ? (
+            <div className="login-header animate-fade-in" style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📧</div>
+              <h2 className="login-title">Verify Email</h2>
+              <p className="login-subtitle" style={{ marginBottom: '2rem' }}>
+                We've sent a verification link to <strong>{email}</strong>.
+              </p>
+              <div className="glass-panel" style={{ padding: '1rem', fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '2rem', textAlign: 'left', border: '1px dashed rgba(255,255,255,0.2)' }}>
+                <strong>Local Development Notice:</strong><br/>
+                Since we are running locally, check your backend NestJS terminal console logs to find the email verification link.
+              </div>
+              <Button onClick={() => router.push('/login')}>Go to Sign In</Button>
+            </div>
+          ) : (
+            <>
+              <div className="login-header">
+                <h2 className="login-title">Create Account</h2>
+                <p className="login-subtitle">Start your journey today</p>
+              </div>
 
-          <form onSubmit={handleRegister} className="login-form">
-            <Input 
-              label="Username"
-              type="text" 
-              placeholder="developer123"
-              required
-            />
-            <Input 
-              label="Email address"
-              type="email" 
-              placeholder="you@example.com"
-              required
-            />
-            <Input 
-              label="Password"
-              type="password" 
-              placeholder="••••••••"
-              required
-            />
-            
-            {error && <div className="login-error-alert">{error}</div>}
-            
-            <Button type="submit" isLoading={isLoading}>
-              Sign Up
-            </Button>
-          </form>
+              <form onSubmit={handleRegister} className="login-form">
+                <Input 
+                  label="Username"
+                  type="text" 
+                  placeholder="developer123"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  required
+                />
+                <Input 
+                  label="Email address"
+                  type="email" 
+                  placeholder="you@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+                <Input 
+                  label="Password"
+                  type="password" 
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+                
+                {error && <div className="login-error-alert">{error}</div>}
+                
+                <Button type="submit" isLoading={isLoading}>
+                  Sign Up
+                </Button>
+              </form>
 
-          <div className="divider">
-            <span>or sign up with</span>
-          </div>
+              <div className="divider">
+                <span>or sign up with</span>
+              </div>
 
-          <div className="oauth-container">
-            <OAuthButton 
-              provider="github" 
-              label="GitHub" 
-              onClick={() => handleOAuth('github')}
-              type="button"
-            />
-            <OAuthButton 
-              provider="google" 
-              label="Google" 
-              onClick={() => handleOAuth('google')}
-              type="button"
-            />
-          </div>
+              <div className="oauth-container">
+                <OAuthButton 
+                  provider="github" 
+                  label="GitHub" 
+                  onClick={() => handleOAuth('github')}
+                  type="button"
+                />
+                <OAuthButton 
+                  provider="google" 
+                  label="Google" 
+                  onClick={() => handleOAuth('google')}
+                  type="button"
+                />
+              </div>
 
-          <p className="login-footer">
-            Already have an account? <Link href="/login">Sign in instead</Link>
-          </p>
+              <p className="login-footer">
+                Already have an account? <Link href="/login">Sign in instead</Link>
+              </p>
+            </>
+          )}
         </div>
       </div>
     </div>

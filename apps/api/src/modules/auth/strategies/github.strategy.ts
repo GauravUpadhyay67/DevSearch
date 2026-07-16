@@ -35,6 +35,7 @@ export class GithubStrategy extends PassportStrategy(Strategy, 'github') {
         displayName: displayName || username,
         passwordHash: '', // OAuth users don't have a local password
         avatarUrl: photos?.[0]?.value,
+        isEmailVerified: true,
       });
     }
 

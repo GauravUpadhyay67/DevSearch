@@ -6,10 +6,13 @@ import { useRouter } from 'next/navigation';
 import { Input } from '../../../src/components/Input';
 import { Button } from '../../../src/components/Button';
 import { OAuthButton } from '../../../src/components/OAuthButton';
+import { fetchApi } from '../../../src/lib/api';
 import './login.css';
 
 export default function LoginPage() {
   const router = useRouter();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -18,11 +21,20 @@ export default function LoginPage() {
     setIsLoading(true);
     setError('');
     
-    // TODO: Connect to backend local login API
-    setTimeout(() => {
+    try {
+      const response = await fetchApi('/auth/login', {
+        data: { email, password }
+      });
+      
+      if (response.accessToken) {
+        localStorage.setItem('token', response.accessToken);
+        router.push('/dashboard');
+      }
+    } catch (err: any) {
+      setError(err.message || 'Invalid credentials. Please try again.');
+    } finally {
       setIsLoading(false);
-      setError('Invalid credentials. Try OAuth instead.');
-    }, 1000);
+    }
   };
 
   const handleOAuth = (provider: 'google' | 'github') => {
@@ -82,12 +94,16 @@ export default function LoginPage() {
               label="Email address"
               type="email" 
               placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               required
             />
             <Input 
               label="Password"
               type="password" 
               placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
               required
             />
             

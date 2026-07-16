@@ -16,12 +16,12 @@ export default function AuthSuccessPage() {
       
       if (token) {
         // Save the JWT token to local storage
-        localStorage.setItem('accessToken', token);
+        localStorage.setItem('token', token);
         setStatus('Authentication successful! Redirecting...');
         
         // Redirect to the home dashboard (we'll build this later)
         setTimeout(() => {
-          router.push('/');
+          router.push('/dashboard');
         }, 1500);
       } else {
         setStatus('Authentication failed. No token received.');

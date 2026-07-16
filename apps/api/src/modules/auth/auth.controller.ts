@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UseGuards, Request, Get, Req, Res } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Request, Get, Req, Res, Query } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LocalAuthGuard } from '../../common/guards/local-auth.guard';
 import { Public } from '../../common/decorators/public.decorator';
@@ -13,6 +13,12 @@ export class AuthController {
   @Post('register')
   async register(@Body() body: any) {
     return this.authService.register(body);
+  }
+
+  @Public()
+  @Get('verify-email')
+  async verifyEmail(@Query('token') token: string) {
+    return this.authService.verifyEmail(token);
   }
 
   @Public()

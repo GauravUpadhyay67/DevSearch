@@ -35,6 +35,7 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
         displayName: displayName || email.split('@')[0],
         passwordHash: '', // OAuth users don't have a local password
         avatarUrl: photos?.[0]?.value,
+        isEmailVerified: true,
       });
     }
 

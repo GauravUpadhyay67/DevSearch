@@ -8,6 +8,8 @@ import { ConfigModule } from '@nestjs/config';
 import jwtConfig from './config/jwt.config';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
+import { SnippetsModule } from './modules/snippets/snippets.module';
+import { BookmarksModule } from './modules/bookmarks/bookmarks.module';
 
 @Module({
   imports: [
@@ -18,7 +20,7 @@ import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
     }),
     PrismaModule, 
     UsersModule, 
-    AuthModule
+    AuthModule, SnippetsModule, BookmarksModule
   ],
   controllers: [AppController],
   providers: [
